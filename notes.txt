@@ -1,0 +1,60 @@
+Part 1: building a SAT solver
+
+1. layout of a cnf file:
+- comments are with 'c'
+- line starting with p describes number of var and number of clauses
+    > p cnf 3 2 --> 3 variables, 2 clauses
+
+2. DIMACS sudoku rules (see sudoku-rules.txt)
+- all possibilities for one square:
+    > 111 112 113 114 115 116 117 118 119 0
+- if square (1,1) has value 1, it cannot have the value 2
+    > -111 -112 0
+- possible places for the number 4 in a box (ex: top right)
+    > 174 184 194 274 284 294 374 384 394 0
+- possible places for a horizontal
+    > 114 124 134 144 154 164 174 184 194 0
+- possible places for a vertical
+    > 115 215 315 415 515 615 715 815 915 0
+
+3. encode a given puzzle in DIMACS format (see sudoku-example.txt)
+
+4. giving step 2 and 3 to the sat_solver should return a solution
+- output in DIMACS
+- output consists of all variables with their truth assignment.
+- add ".out" to outputfile, so filename --> filename.out
+    > QUESTION: does filename.txt become filename.txt.out? or is filename meant
+                without the extension?
+    > QUESTION: would filename_out --> "filename_out.txt" also be okay?
+- if no solution, output an empty file
+- if multiple solutions, one is enough --> quit loop after formula is found True
+
+Exta notes:
+- implement DP algorithm without heuristics
+- implement 2 other strategies, points for sophistication lol
+    > need 3 scripts with algorithms
+- link for sudoku's to test on, need trivial script to transform it to DIMACS
+- command "SAT -Sn inputfile" should run program
+    > SAT is name of program
+    > n=1 for the basic DP and n=2 or 3 for your two other strategies
+    > input file is concatenation of all required input clauses
+        > QUESTION: does the concatenation mean all clauses put in one file?
+        > QUESTION: would two input files also be okay? (clauses + puzzle)?
+            > or does the concatenation mean you have to write clauses.txt+puzzle.txt?
+
+------------------------------------------------------------------
+
+implementing algorithm
+
+- reading in the rules file
+    > seperating every var on a line with an OR
+    > connecting every line with an AND
+    > QUESTION: HOW TO REPRESENT THE VARIABLES?
+                --> maybe storing all the variables in a dict, initializing them with value FALSE
+                    but could also draw wrong conclusion that a clause is empty
+                    BUT is it possible to run things, when variables have no assigned values?
+    > QUESTION: HOW DO YOU MAKE CLEAR THAT THE "-" STANDS FOR FALSE?
+
+
+- reading in the puzzle file
+    >
