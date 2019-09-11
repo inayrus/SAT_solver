@@ -1,6 +1,7 @@
 import sys
 import pathlib
 
+
 class SAT(object):
     """Representation of a SAT solver"""
 
@@ -14,16 +15,14 @@ class SAT(object):
 
     def load_clauses(self, clauses_file):
         """
-        reads in the clauses from a file
-        returns a list/set --> list of lists
-        returns a dict with all the variables and their truth assignment
+        reads in the clauses from a file and fills self.values with literals
+        returns a list of lists
         """
         # https://stackoverflow.com/questions/28890268/parse-dimacs-cnf-file-python
         filepath = pathlib.Path(clauses_file)
 
-        # create a list in a list
+        # create a list for all the clauses
         clauses = list()
-        clauses.append(list())
 
         # read in the file
         with filepath.open('r') as f:
@@ -32,19 +31,19 @@ class SAT(object):
 
                 # skip empty lines and lines with comments
                 if len(symbols) != 0 and symbols[0] not in ("p", "c"):
+                    clause = list()
+
                     for symbol in symbols:
                         literal = int(symbol)
-
-                        # add new list if line is terminated with 0
+                        # add clause to clauses list if line terminated with 0
                         if literal == 0:
-                            clauses.append(list())
+                            clauses.append(clause)
                         else:
-                            # add literal to the last list in list of lists
-                            clauses[-1].append(literal)
+                            # add literal to clause
+                            clause.append(literal)
                             # add literal to self.values
                             self.init_values(literal)
         return clauses
-
 
     def init_values(self, literal):
         """
@@ -63,13 +62,13 @@ class SAT(object):
         """
         # extra var with cleared clauses (pop from old and append to cleared list)
 
-if __name__ == "__main__":
 
-    # read the commandline args ("SAT -Sn clausefile+puzzlefile")
+if __name__ == "__main__":
+    # read the commandline args ("SAT -Sn inputfile")
 
     # ensure correct usage
     if len(sys.argv) != 3:
-        print("usage: SAT.py -Sn inputfile.txt")
+        print("usage: python SAT.py -Sn inputfile.txt")
         exit(1)
 
     # ensure the strategy number is valid
@@ -77,7 +76,6 @@ if __name__ == "__main__":
     if n_strategy < 1 or n_strategy > 3:
         print("usage: pick 1, 2, or 3 as strategy number, ex. -S1")
         exit(1)
-
 
     inputfile = sys.argv[2]
     # add extension if absent
@@ -93,9 +91,7 @@ if __name__ == "__main__":
     solver = SAT(inputfile)
 
     # test lineeeesss
+    print(len(solver.clauses))
     print(solver.clauses)
-    print(solver.values)
 
     print("mlep")
-
-
