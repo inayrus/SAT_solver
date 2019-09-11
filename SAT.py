@@ -62,6 +62,54 @@ class SAT(object):
         """
         # extra var with cleared clauses (pop from old and append to cleared list)
 
+        # set of clauses is 'sat' when all of them are true
+        # the set is 'unsat' when there is an empty clause: all literals false
+
+        # at beginning of
+
+    def write_output(self, filename):
+        """
+        Takes a dictionary with values and their truth assignment and writes it
+        to a file in DIMACS notation.
+        """
+        # check if inputfile has the .txt extension, if yes, remove it
+        if ".txt" in filename:
+            filename = filename.split(".")[0]
+
+        # get a list with all literals that are True
+        true_literals = self.filter_true_literals()
+        n_true_lits = len(true_literals)
+
+        # check if filename.out already exists
+        filepath = pathlib.Path(filename + '.out')
+
+        # create new file if 'filename.out' doesn't exist yet
+        if not filepath.exists():
+            with filepath.open(mode='w') as writer:
+                # comment
+                writer.write("c Literals with value True based on clauses in {}\n".format(filename))
+
+                # p cnf nvar nclauses
+                writer.write("p cnf {} {}\n".format(n_true_lits, n_true_lits))
+
+                # write the literals
+                for var in true_literals:
+                    writer.write("{} 0\n".format(str(var)))
+
+        # what to do if the file already exists? append?? create filename+1??
+
+    def filter_true_literals(self):
+        """
+        takes self.values,
+        returns the variables that have truth assignment '1' in a list
+        """
+        true_literals = list()
+
+        for var in self.values:
+            if self.values[var] == 1:
+                true_literals.append(var)
+        return true_literals
+
 
 if __name__ == "__main__":
     # read the commandline args ("SAT -Sn inputfile")
@@ -91,7 +139,8 @@ if __name__ == "__main__":
     solver = SAT(inputfile)
 
     # test lineeeesss
-    print(len(solver.clauses))
-    print(solver.clauses)
+    test_dict = {111: '?', 112: 0, 113: '?', 114: 1, 221: 1}
+    # solver.values = test_dict
+    solver.write_output(inputfile)
 
     print("mlep")
