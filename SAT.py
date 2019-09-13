@@ -141,6 +141,24 @@ class SAT(object):
             else:
                 return 1
 
+    def remove_tautologies(self):
+        """
+        removes tautologies from the list of clauses
+        (ex. -111 and 111 in the same clause)
+        """
+        tautologies = []
+        for index, clause in enumerate(self.clauses):
+            for literal in clause:
+                positive = 0 + abs(literal)
+                negative = 0 - abs(literal)
+                if positive in clause and negative in clause:
+                    tautologies.append(index)
+                    break
+
+        # delete the tautologies from last to first (keeps right order)
+        for index in reversed(tautologies):
+            del self.clauses[index]
+
     def write_output(self, filename):
         """
         Takes a dictionary with values and their truth assignment and writes it
@@ -213,12 +231,12 @@ if __name__ == "__main__":
     solver = SAT(inputfile)
 
     # test lineeeesss
-    test_dict = {111: '?', 112: 0, 113: '?', 114: 1, 221: 1}
-    test_dict[111] = 0
+    test_dict = {111: '?', 112: '?', 113: '?', 114: '?', 221: '?'}
+    test_clause = [[-111, -114], [116, 298], [160, 196, -160]]
     # print(test_dict)
-    # solver.values = test_dict
+    solver.values = test_dict
     # solver.write_output(inputfile)
-    solver.unit_propagation()
+    # solver.unit_propagation()
     # print(solver.get_truth(113))
 
     print("mlep")
