@@ -86,29 +86,60 @@ class SAT(object):
 
     def unit_propagation(self):
         """
-        look through all the clauses for unit clauses,
+        looks through all the clauses for unit clauses,
         stores the unit clauses in a list to set to True/False
-        throws the unit clauses out of the list with all clauses
-        SHOULD IT RETURN SOMETHING?
         """
         # a temporary list to prevent the clauses list from changing
         found_units = list()
 
         # filter for unit clauses
         for clause in self.clauses:
-            # clauses that are length one
-            if len(clause) == 1:
+            # clauses that are length one and not already True
+            if len(clause) == 1 and self.get_truth(clause[0]) != 1:
                 found_units.append(clause[0])
-            # check for clauses where all literals except for one are False
-            # else:
-            #     for literal in clause:
+            else:
+                # check for clauses with False literals and only one unassigned
+                false_count = 0
+                hidden_unit = []
+                for index, literal in enumerate(clause):
+                    # break if two literals are not False and the clause is true
+                    if false_count < index - 1 or self.get_truth(literal) == 1:
+                        break
+                    elif self.get_truth(literal) == 0:
+                        false_count += 1
+                    # remember only unassigned
+                    else:
+                        hidden_unit.append(literal)
+                # only add to found units if one unassigned
+                if len(hidden_unit) == 1:
+                    found_units.append(hidden_unit[0])
 
         # turn literals in list to true
         for literal in found_units:
             self.values[literal] = 1
 
-        # add unit clauses to cleared_clauses list
+    def get_truth(self, literal):
+        """
+        checks the truth value of a variable and takes negation into account
+        returns 1 if the literal is true, 0 if it's false, and '?' if unassigned
+        """
+        # check if the literal is negated
+        if literal < 0:
+            negated = True
+        else:
+            negated = False
 
+        # get value from the truth value dictionary
+        assigned = self.values[abs(literal)]
+
+        if negated == False or assigned == '?':
+            return assigned
+        # if literal is negated: return the opposite values
+        else:
+            if assigned == 1:
+                return 0
+            else:
+                return 1
 
     def write_output(self, filename):
         """
@@ -188,5 +219,6 @@ if __name__ == "__main__":
     # solver.values = test_dict
     # solver.write_output(inputfile)
     solver.unit_propagation()
+    # print(solver.get_truth(113))
 
     print("mlep")
