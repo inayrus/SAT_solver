@@ -59,13 +59,56 @@ class SAT(object):
         runs the davis putnam algorithm.
         recursively???
         :return: an DIMACS output file with the true variables
+
+        --> after first simplification, calculate l/n ratio
         """
         # extra var with cleared clauses (pop from old and append to cleared list)
 
         # set of clauses is 'sat' when all of them are true
         # the set is 'unsat' when there is an empty clause: all literals false
 
-        # at beginning of
+        # at beginning of loop, remove tautologies
+        # simplify:
+            # unit clauses
+                # loop though clauses once
+                    # when unit clause found (clause of len 1), adjust truth value
+                    # loop through clauses again to filter
+                        # copy all clauses that are now True into self.cleared_clauses + remember their index in the OG list
+                        # when filter loop finished, remove cleared clauses from attribute
+                        # Q: how does removing values from a list impact the for look over the list?
+                            # meh you probably need to call the function again with new parameters
+                            # Q: would it be possible to use self.clauses then?
+                            # Q: do class attr in low depth recursiom change along when high depth changes?
+                                # else, make indiv var
+            # pure literals
+            # --> for every unit
+        # split:
+
+    def unit_propagation(self):
+        """
+        look through all the clauses for unit clauses,
+        stores the unit clauses in a list to set to True/False
+        throws the unit clauses out of the list with all clauses
+        SHOULD IT RETURN SOMETHING?
+        """
+        # a temporary list to prevent the clauses list from changing
+        found_units = list()
+
+        # filter for unit clauses
+        for clause in self.clauses:
+            # clauses that are length one
+            if len(clause) == 1:
+                found_units.append(clause[0])
+            # check for clauses where all literals except for one are False
+            # else:
+            #     for literal in clause:
+
+        # turn literals in list to true
+        for literal in found_units:
+            self.values[literal] = 1
+
+        # add unit clauses to cleared_clauses list
+
 
     def write_output(self, filename):
         """
@@ -140,7 +183,10 @@ if __name__ == "__main__":
 
     # test lineeeesss
     test_dict = {111: '?', 112: 0, 113: '?', 114: 1, 221: 1}
+    test_dict[111] = 0
+    # print(test_dict)
     # solver.values = test_dict
-    solver.write_output(inputfile)
+    # solver.write_output(inputfile)
+    solver.unit_propagation()
 
     print("mlep")
