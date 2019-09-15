@@ -1,5 +1,6 @@
 import sys
 import pathlib
+import random
 
 
 class SAT(object):
@@ -9,9 +10,11 @@ class SAT(object):
         """
         Initializes clauses and start values of SAT solver
         """
-        # values should be a dict, only absolute values
         self.values = {}
         self.clauses = self.load_clauses(clauses_file)
+        self.choice_tree = []
+        # can check [-1] in choice list to remember where dependency should be added
+        self.dependencies = {}
 
     def load_clauses(self, clauses_file):
         """
@@ -62,10 +65,14 @@ class SAT(object):
 
         --> after first simplification, calculate l/n ratio
         """
-        # --> tautologieen
+        # remove tautologies
+        self.remove_tautologies()
+
         # BEGIN loop met stop wanneer wannEER??????????
-        # --> unit checken met change counter op 0. loopt in een while counter > 0
+        # --> check for unit clauses in a while loop
+        self.unit_propagation()
         # --> branching
+        self.split_S1()
         # ^^ loop continues until conflict: watched literals done / clause == False
             # if conflict: backtracking
             # bijhouden stappen --> lijst in lijst met chosen var en its assignment
@@ -86,35 +93,71 @@ class SAT(object):
         """
         looks through all the clauses for unit clauses,
         stores the unit clauses in a list to set to True/False
+        keeps looping until no more unit clause is found
         """
-        # a temporary list to prevent the clauses list from changing
-        found_units = list()
+        # value to start the loop
+        unit_count = 1
 
-        # filter for unit clauses
-        for clause in self.clauses:
-            # clauses that are length one and not already True
-            if len(clause) == 1 and self.get_truth(clause[0]) != 1:
-                found_units.append(clause[0])
-            else:
-                # check for clauses with False literals and only one unassigned
-                false_count = 0
-                hidden_unit = []
-                for index, literal in enumerate(clause):
-                    # break if two literals are not False and the clause is true
-                    if false_count < index - 1 or self.get_truth(literal) == 1:
-                        break
-                    elif self.get_truth(literal) == 0:
-                        false_count += 1
-                    # remember only unassigned
-                    else:
-                        hidden_unit.append(literal)
-                # only add to found units if one unassigned
-                if len(hidden_unit) == 1:
-                    found_units.append(hidden_unit[0])
+        while unit_count > 0:
+            # a temporary list to prevent the clauses list from changing
+            found_units = set()
+            unit_count = 0
+            print("entered unit loop again")
 
-        # turn literals in list to true
-        for literal in found_units:
-            self.set_truth(literal, 1)
+            # filter for unit clauses
+            for clause in self.clauses:
+                # clauses that are length one and not already True
+                if len(clause) == 1 and self.get_truth(clause[0]) != 1:
+                    found_units.add(clause[0])
+                    unit_count += 1
+                else:
+                    # check for clauses with False literals and only one unassigned
+                    false_count = 0
+                    hidden_unit = []
+                    for index, literal in enumerate(clause):
+                        # break if two literals are not False and the clause is true
+                        if false_count < index - 1 or self.get_truth(literal) == 1:
+                            hidden_unit = []
+                            break
+                        elif self.get_truth(literal) == 0:
+                            false_count += 1
+                        # remember only unassigned
+                        else:
+                            hidden_unit.append(literal)
+                    # only add to found units if one unassigned
+                    if len(hidden_unit) == 1:
+                        found_units.add(hidden_unit[0])
+                        unit_count += 1
+
+            # turn literals in list to true
+            for literal in found_units:
+                self.set_truth(literal, 1)
+                print(abs(literal), self.values[abs(literal)])
+            print(unit_count)
+
+            # if units are found bc of split choice, add them as dependencies
+            if len(self.choice_tree) != 0:
+                chosen = self.choice_tree[-1][0]
+                self.dependencies[chosen].update(found_units)
+
+    def split_S1(self):
+        """
+        branching strategy 1: basic davis putnam.
+        a random unassigned variable will be chosen
+        """
+        # choose random unassigned variable
+        unassigned = [key for (key, value) in self.values.items() if value == '?']
+        chosen = random.choice(unassigned)
+
+        # set the variable to true
+        self.set_truth(chosen, 1)
+
+        # document choice
+        self.choice_tree.append([chosen, True])
+
+        # create dependency var
+        self.dependencies[chosen] = set()
+        print(self.dependencies)
 
     def get_truth(self, literal):
         """
@@ -259,8 +302,7 @@ if __name__ == "__main__":
     # print(test_dict)
     # solver.values = test_dict
     # solver.write_output(inputfile)
-    solver.unit_propagation()
-    # print(solver.get_truth(113))
+    solver.davis_putnam()
 
     # MAYBE ISSUE -225 IS FIRST RUNTHOUGH FOT GETTING VARS IN DICT??? MUST ALL ME POSITIVE
 
