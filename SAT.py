@@ -52,7 +52,7 @@ class SAT(object):
         ex. 'literal': '?'
         """
         if abs(literal) not in self.values:
-            self.values[literal] = '?'
+            self.values[abs(literal)] = '?'
 
     def davis_putnam(self):
         """
@@ -62,26 +62,24 @@ class SAT(object):
 
         --> after first simplification, calculate l/n ratio
         """
-        # extra var with cleared clauses (pop from old and append to cleared list)
+        # --> tautologieen
+        # BEGIN loop met stop wanneer wannEER??????????
+        # --> unit checken met change counter op 0. loopt in een while counter > 0
+        # --> branching
+        # ^^ loop continues until conflict: watched literals done / clause == False
+            # if conflict: backtracking
+            # bijhouden stappen --> lijst in lijst met chosen var en its assignment
+                # [[x1, True], [x2, False]]
+            # bijhouden dependency: what choice led to what simplification assignment
+                # {x2: [x4]}
+            # wanneer backtracken, [-1] index poppen en veranderen van True --> False.
+            # als value al False, pop the next [-1] index in stappen list
 
         # set of clauses is 'sat' when all of them are true
+        # --> call output function
         # the set is 'unsat' when there is an empty clause: all literals false
+        # --> is unsat when stuff has backtracked to step 0 and wants apply [-1] again
 
-        # at beginning of loop, remove tautologies
-        # simplify:
-            # unit clauses
-                # loop though clauses once
-                    # when unit clause found (clause of len 1), adjust truth value
-                    # loop through clauses again to filter
-                        # copy all clauses that are now True into self.cleared_clauses + remember their index in the OG list
-                        # when filter loop finished, remove cleared clauses from attribute
-                        # Q: how does removing values from a list impact the for look over the list?
-                            # meh you probably need to call the function again with new parameters
-                            # Q: would it be possible to use self.clauses then?
-                            # Q: do class attr in low depth recursiom change along when high depth changes?
-                                # else, make indiv var
-            # pure literals
-            # --> for every unit
         # split:
 
     def unit_propagation(self):
@@ -116,7 +114,7 @@ class SAT(object):
 
         # turn literals in list to true
         for literal in found_units:
-            self.values[literal] = 1
+            self.set_truth(literal, 1)
 
     def get_truth(self, literal):
         """
@@ -124,10 +122,7 @@ class SAT(object):
         returns 1 if the literal is true, 0 if it's false, and '?' if unassigned
         """
         # check if the literal is negated
-        if literal < 0:
-            negated = True
-        else:
-            negated = False
+        negated = self.is_negated(literal)
 
         # get value from the truth value dictionary
         assigned = self.values[abs(literal)]
@@ -140,6 +135,34 @@ class SAT(object):
                 return 0
             else:
                 return 1
+
+    def set_truth(self, literal, value):
+        """
+        changes the value of a literal in self.values and takes negation of the
+        literal into account
+        """
+        # check if literal is negated
+        negated = self.is_negated(literal)
+
+        if not negated:
+            self.values[literal] = value
+        else:
+            # if literal is negated assign the opposite values
+            if value == 1:
+                self.values[abs(literal)] = 0
+            else:
+                self.values[abs(literal)] = 1
+
+    def is_negated(self, literal):
+        """
+        checks if a literal is negated
+        returns a boolean
+        """
+        if literal < 0:
+            return True
+        else:
+            return False
+
 
     def remove_tautologies(self):
         """
@@ -234,9 +257,11 @@ if __name__ == "__main__":
     test_dict = {111: '?', 112: '?', 113: '?', 114: '?', 221: '?'}
     test_clause = [[-111, -114], [116, 298], [160, 196, -160]]
     # print(test_dict)
-    solver.values = test_dict
+    # solver.values = test_dict
     # solver.write_output(inputfile)
-    # solver.unit_propagation()
+    solver.unit_propagation()
     # print(solver.get_truth(113))
+
+    # MAYBE ISSUE -225 IS FIRST RUNTHOUGH FOT GETTING VARS IN DICT??? MUST ALL ME POSITIVE
 
     print("mlep")
