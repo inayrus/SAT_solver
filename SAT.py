@@ -177,41 +177,41 @@ class SAT(object):
         self.dependencies[123] = set()
         print("values before: {}".format(self.values))
 
-        for i in range(8):
-            # var to start the loop off
-            assigned_truth = False
-            # keep track of the literals that might have dependent variables
-            chosen_literals = list()
+        # var to start the loop off
+        assigned_truth = False
+        # keep track of the literals that might have dependent variables
+        chosen_literals = list()
 
-            # keep backtracking if the truth value of literal is flipped before
-            while assigned_truth == False:
-                # if backtracked to first choice in choice_tree twice, return unsat
-                if len(self.choice_tree) == 0:
-                    self.unsat = True
-                    return
+        # keep backtracking if the truth value of literal is flipped before
+        while assigned_truth == False:
+            # if backtracked to first choice in choice_tree twice, return unsat
+            if len(self.choice_tree) == 0:
+                self.unsat = True
+                return
 
-                # remove the previous made split in choice tree
-                last_choice, assigned_truth = self.choice_tree.pop(-1)
-                chosen_literals.append(last_choice)
+            # remove the previous made split in choice tree
+            last_choice, assigned_truth = self.choice_tree.pop(-1)
+            chosen_literals.append(last_choice)
 
-            # undo truth values
-            for literal in chosen_literals:
-                # undo literals
-                self.set_truth(literal, '?')
-                # undo dependencies
-                lit_dependencies = self.dependencies[literal]
-                for dependent in lit_dependencies:
-                    self.set_truth(dependent, '?')
+        # undo truth values
+        for literal in chosen_literals:
+            # undo literals
+            self.set_truth(literal, '?')
+            # undo dependencies
+            lit_dependencies = self.dependencies[literal]
+            for dependent in lit_dependencies:
+                self.set_truth(dependent, '?')
+            # empty dependency set
+            self.dependencies[literal] = set()
 
-            # change value literal from True to False (last item always value True)
-            flip_lit = chosen_literals[-1]
-            self.set_truth(flip_lit, 0)
-            self.choice_tree.append([flip_lit, False])
+        # change value literal from True to False (last item always value True)
+        flip_lit = chosen_literals[-1]
+        self.set_truth(flip_lit, 0)
+        self.choice_tree.append([flip_lit, False])
 
-            print(chosen_literals)
-            print("choice tree: {}".format(self.choice_tree))
-            print("values: {}".format(self.values))
-
+        print(chosen_literals)
+        print("choice tree: {}".format(self.choice_tree))
+        print("values: {}".format(self.values))
 
     def get_truth(self, literal):
         """
