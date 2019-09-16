@@ -15,6 +15,8 @@ class SAT(object):
         self.choice_tree = []
         # can check [-1] in choice list to remember where dependency should be added
         self.dependencies = {}
+        self.unsat = False
+        self.sat = False
 
     def load_clauses(self, clauses_file):
         """
@@ -68,24 +70,18 @@ class SAT(object):
         # remove tautologies
         self.remove_tautologies()
 
-        # BEGIN loop met stop wanneer wannEER??????????
-        # --> check for unit clauses in a while loop
-        self.unit_propagation()
-        # --> branching
-        self.split_S1()
-        # ^^ loop continues until conflict: watched literals done / clause == False
-            # if conflict: backtracking
-            # bijhouden stappen --> lijst in lijst met chosen var en its assignment
-                # [[x1, True], [x2, False]]
-            # bijhouden dependency: what choice led to what simplification assignment
-                # {x2: [x4]}
-            # wanneer backtracken, [-1] index poppen en veranderen van True --> False.
-            # als value al False, pop the next [-1] index in stappen list
+        while self.sat == False and self.unsat == False:
+            # check for unit clauses
+            self.unit_propagation()
+            # branching
+            self.split_S1()
+            # ^^ loop continues until conflict: watched literals done / clause == False
+                # if conflict: backtracking
 
         # set of clauses is 'sat' when all of them are true
         # --> call output function
         # the set is 'unsat' when there is an empty clause: all literals false
-        # --> is unsat when stuff has backtracked to step 0 and wants apply [-1] again
+        # --> call output function w adjusted parameters
 
         # split:
 
@@ -159,6 +155,64 @@ class SAT(object):
         self.dependencies[chosen] = set()
         print(self.dependencies)
 
+    def chron_backtrack(self):
+        """
+        chronological backtracking:
+        - goes to the previous made split in the choice tree
+        - turns the literal from True to False
+        - unassigns all values that depended on that literal
+        - if the value was already False, backtrack to the next upper level of
+        the choice tree and do the same as above
+
+        if len(choice_tree) == 0, unsat is set to True
+        - after backtrack, unit prop and split need to be called again
+        """
+        # test variable
+        self.choice_tree = [[123, True], [1255, True], [1, True]]
+        self.set_truth(123, 1)
+        self.set_truth(1255, 1)
+        self.set_truth(1, 1)
+        self.dependencies[1] = {113}
+        self.dependencies[1255] = {134}
+        self.dependencies[123] = set()
+        print("values before: {}".format(self.values))
+
+        for i in range(8):
+            # var to start the loop off
+            assigned_truth = False
+            # keep track of the literals that might have dependent variables
+            chosen_literals = list()
+
+            # keep backtracking if the truth value of literal is flipped before
+            while assigned_truth == False:
+                # if backtracked to first choice in choice_tree twice, return unsat
+                if len(self.choice_tree) == 0:
+                    self.unsat = True
+                    return
+
+                # remove the previous made split in choice tree
+                last_choice, assigned_truth = self.choice_tree.pop(-1)
+                chosen_literals.append(last_choice)
+
+            # undo truth values
+            for literal in chosen_literals:
+                # undo literals
+                self.set_truth(literal, '?')
+                # undo dependencies
+                lit_dependencies = self.dependencies[literal]
+                for dependent in lit_dependencies:
+                    self.set_truth(dependent, '?')
+
+            # change value literal from True to False (last item always value True)
+            flip_lit = chosen_literals[-1]
+            self.set_truth(flip_lit, 0)
+            self.choice_tree.append([flip_lit, False])
+
+            print(chosen_literals)
+            print("choice tree: {}".format(self.choice_tree))
+            print("values: {}".format(self.values))
+
+
     def get_truth(self, literal):
         """
         checks the truth value of a variable and takes negation into account
@@ -187,14 +241,16 @@ class SAT(object):
         # check if literal is negated
         negated = self.is_negated(literal)
 
-        if not negated:
+        if not negated or value == '?':
             self.values[literal] = value
         else:
             # if literal is negated assign the opposite values
             if value == 1:
                 self.values[abs(literal)] = 0
-            else:
+            elif value == 0:
                 self.values[abs(literal)] = 1
+            else:
+                print("something went wrong")
 
     def is_negated(self, literal):
         """
@@ -297,12 +353,13 @@ if __name__ == "__main__":
     solver = SAT(inputfile)
 
     # test lineeeesss
-    test_dict = {111: '?', 112: '?', 113: '?', 114: '?', 221: '?'}
+    test_dict = {1: 0, 112: '?', 113: 0, 114: '?', 123: 0, 1255: 1, 134: 1}
     test_clause = [[-111, -114], [116, 298], [160, 196, -160]]
     # print(test_dict)
-    # solver.values = test_dict
+    solver.values = test_dict
     # solver.write_output(inputfile)
-    solver.davis_putnam()
+    # solver.davis_putnam()
+    solver.chron_backtrack()
 
     # MAYBE ISSUE -225 IS FIRST RUNTHOUGH FOT GETTING VARS IN DICT??? MUST ALL ME POSITIVE
 
