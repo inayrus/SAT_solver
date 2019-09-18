@@ -28,6 +28,7 @@ watched_literals = []
 for i in range(len(clause_list)):
     watched_literals.append([None] * 2)
 
+# fills watched literals list
 for clause in clause_list:
     clause_index = clause_list.index(clause)
     w_l = 0
@@ -171,18 +172,26 @@ clause_list = [[False, True, False, False, True, False, False, False, False, '?'
 print('hey') # just so I know in output where it begins
 for literals in watched_literals:
     literals_index = watched_literals.index(literals)
+
+    # loops over literals per watched lit clause
     for literal in literals:    #already the actual number itself
         literal_index = watched_literals[literals_index].index(literal)
+
+        # only enters when an item in watched lits has changed value, no longer '?'
         while clause_list[literals_index][literal] != '?' and len(watched_literals[literals_index]) > 0:
             print('literal', literal)
             print('len', len(clause_list[literals_index]))
+
+            # literal represents the index of a value in clause_list
             if (literal + 1) > (len(clause_list[literals_index]) - 1):
+                # if no more literals in clause to watch
                 print('owps')
                 del watched_literals[literals_index][literal_index]
                 print(watched_literals)
                 if len(watched_literals[literals_index]) == 0:
                     print('Now satisfiability check should be performed')
                     print(watched_literals)
+            # update value to watch --> but also has to check whether the new value is also unassigned
             elif (literal + 1) not in watched_literals[literals_index]:
                 literal += 1
                 watched_literals[literals_index][literal_index] = literal

@@ -12,11 +12,14 @@ class SAT(object):
         """
         self.values = {}
         self.clauses = self.load_clauses(clauses_file)
+        # self.values = {111: '?', 114: '?', 116: '?', 298: '?', 160: '?', 196: '?', 161: '?', 138: '?', 489: '?', 982: '?', 274: '?'}
+        # self.clauses = [[-111, -114], [116, 298], [160, 196, 161, -138, 489, 982, 274]]
         self.choice_tree = []
         # can check [-1] in choice list to remember where dependency should be added
         self.dependencies = {}
-        self.unsat = False
-        self.sat = False
+        self.watched_literals = self.set_watched_literals()
+        self.sat_or_unsat = False
+        self.backs = 0
 
     def load_clauses(self, clauses_file):
         """
@@ -59,7 +62,26 @@ class SAT(object):
         if abs(literal) not in self.values:
             self.values[abs(literal)] = '?'
 
-    def davis_putnam(self):
+    def set_watched_literals(self):
+        """
+        stores two literals for every clause, where the value of the literal
+        is not false
+        """
+        watched_literals = []
+        for clause in self.clauses:
+            wl_clause = []
+            for lit_i, literal in enumerate(clause):
+                if len(wl_clause) == 2:
+                    break
+                elif self.get_truth(literal) != 0:
+                    # if value not false, append index of the literal in its clause
+                    wl_clause.append(literal)
+            # append the wl_clause to watched_literals list
+            watched_literals.append(wl_clause)
+        print(watched_literals)
+        return watched_literals
+
+    def davis_putnam(self, file):
         """
         runs the davis putnam algorithm.
         recursively???
@@ -70,20 +92,22 @@ class SAT(object):
         # remove tautologies
         self.remove_tautologies()
 
-        while self.sat == False and self.unsat == False:
+        while self.sat_or_unsat == False:
             # check for unit clauses
             self.unit_propagation()
+
             # branching
-            self.split_S1()
-            # ^^ loop continues until conflict: watched literals done / clause == False
-                # if conflict: backtracking
+            self.split_s1()
 
-        # set of clauses is 'sat' when all of them are true
-        # --> call output function
-        # the set is 'unsat' when there is an empty clause: all literals false
-        # --> call output function w adjusted parameters
+            # update watched literals
+            conflict = self.update_watched_literals()
 
-        # split:
+            # if conflict: backtracking
+            if conflict:
+                self.chron_backtrack()
+
+        # call output function if SAT or UNSAT
+        self.write_output(file)
 
     def unit_propagation(self):
         """
@@ -136,24 +160,82 @@ class SAT(object):
                 chosen = self.choice_tree[-1][0]
                 self.dependencies[chosen].update(found_units)
 
-    def split_S1(self):
+    def split_s1(self):
         """
         branching strategy 1: basic davis putnam.
         a random unassigned variable will be chosen
         """
+        print("split variable")
         # choose random unassigned variable
         unassigned = [key for (key, value) in self.values.items() if value == '?']
-        chosen = random.choice(unassigned)
+        if unassigned != []:
+            chosen = random.choice(unassigned)
 
-        # set the variable to true
-        self.set_truth(chosen, 1)
+            # set the variable to true
+            self.set_truth(chosen, 1)
 
-        # document choice
-        self.choice_tree.append([chosen, True])
+            # document choice
+            self.choice_tree.append([chosen, True])
 
-        # create dependency var
-        self.dependencies[chosen] = set()
-        print(self.dependencies)
+            # create dependency var
+            self.dependencies[chosen] = set()
+            print(self.dependencies)
+        else:
+            print("no more literals to split")
+            print("backtrack numbers: {}".format(self.backs))
+            print(self.choice_tree)
+            print(len(self.dependencies))
+            exit(1)
+
+    def update_watched_literals(self):
+        """
+        updates the watched literals list
+        counts how many clauses are true and updates self.sat_or_unsat if all clauses are true
+        returns True if an empty clause is found, else it returns False
+        """
+        # self.values = {111: 1, 114: '?', 116: 1, 298: 0, 160: 0, 196: '?', 161: 1, 138: 1, 489: '?', 982: '?', 274: '?'}
+        print("updating watched lits")
+        true_count = 0
+
+        # loop over all the watched literals
+        for clause_i, watched_clause in enumerate(self.watched_literals):
+            to_remove= list()
+
+            if len(watched_clause) > 1:
+                for literal in watched_clause:
+
+                    # if the value of the literal is False
+                    value = self.get_truth(literal)
+                    if value == 0:
+                        # add literal to to_remove list
+                        to_remove.append(literal)
+                    elif value == 1:
+                        # count how many clauses are true
+                        true_count += 1
+
+                # remove here to prevent items being skipped
+                for literal in to_remove:
+                    watched_clause.remove(literal)
+
+                # add other literals that are True or '?' to watched list
+                if len(watched_clause) < 2:
+                    for new_lit in self.clauses[clause_i]:
+                        if new_lit not in watched_clause and self.get_truth(new_lit) != 0:
+                            watched_clause.append(new_lit)
+
+                        # break out of loop if 2 literals in watched list
+                        if len(watched_clause) == 2:
+                            break
+
+                # return if watched list is empty (all literals are False)
+                if watched_clause == []:
+                    return True
+
+        # update attribute if all clauses are true
+        if true_count == len(self.watched_literals):
+            self.sat_or_unsat = True
+
+        return False
 
     def chron_backtrack(self):
         """
@@ -167,15 +249,8 @@ class SAT(object):
         if len(choice_tree) == 0, unsat is set to True
         - after backtrack, unit prop and split need to be called again
         """
-        # test variable
-        self.choice_tree = [[123, True], [1255, True], [1, True]]
-        self.set_truth(123, 1)
-        self.set_truth(1255, 1)
-        self.set_truth(1, 1)
-        self.dependencies[1] = {113}
-        self.dependencies[1255] = {134}
-        self.dependencies[123] = set()
-        print("values before: {}".format(self.values))
+
+        self.backs += 1
 
         # var to start the loop off
         assigned_truth = False
@@ -186,7 +261,7 @@ class SAT(object):
         while assigned_truth == False:
             # if backtracked to first choice in choice_tree twice, return unsat
             if len(self.choice_tree) == 0:
-                self.unsat = True
+                self.sat_or_unsat = True
                 return
 
             # remove the previous made split in choice tree
@@ -209,9 +284,9 @@ class SAT(object):
         self.set_truth(flip_lit, 0)
         self.choice_tree.append([flip_lit, False])
 
-        print(chosen_literals)
-        print("choice tree: {}".format(self.choice_tree))
-        print("values: {}".format(self.values))
+        print("FORK::: BACKTRACK")
+        # print("choice tree: {}".format(self.choice_tree))
+        # print("values: {}".format(self.values))
 
     def get_truth(self, literal):
         """
@@ -228,7 +303,7 @@ class SAT(object):
             return assigned
         # if literal is negated: return the opposite values
         else:
-            if assigned == 1:
+            if int(assigned) == 1:
                 return 0
             else:
                 return 1
@@ -281,6 +356,7 @@ class SAT(object):
         for index in reversed(tautologies):
             del self.clauses[index]
 
+
     def write_output(self, filename):
         """
         Takes a dictionary with values and their truth assignment and writes it
@@ -297,18 +373,17 @@ class SAT(object):
         # check if filename.out already exists
         filepath = pathlib.Path(filename + '.out')
 
-        # create new file if 'filename.out' doesn't exist yet
-        if not filepath.exists():
-            with filepath.open(mode='w') as writer:
-                # comment
-                writer.write("c Literals with value True based on clauses in {}\n".format(filename))
+        # write to 'filename.out'
+        with filepath.open(mode='w') as writer:
+            # comment
+            writer.write("c Literals with value True based on clauses in {}\n".format(filename))
 
-                # p cnf nvar nclauses
-                writer.write("p cnf {} {}\n".format(n_true_lits, n_true_lits))
+            # p cnf nvar nclauses
+            writer.write("p cnf {} {}\n".format(n_true_lits, n_true_lits))
 
-                # write the literals
-                for var in true_literals:
-                    writer.write("{} 0\n".format(str(var)))
+            # write the literals
+            for var in true_literals:
+                writer.write("{} 0\n".format(str(var)))
 
         # what to do if the file already exists? append?? create filename+1??
 
@@ -320,7 +395,7 @@ class SAT(object):
         true_literals = list()
 
         for var in self.values:
-            if self.values[var] == 1:
+            if self.values[abs(var)] == 1:
                 true_literals.append(var)
         return true_literals
 
@@ -353,13 +428,17 @@ if __name__ == "__main__":
     solver = SAT(inputfile)
 
     # test lineeeesss
-    test_dict = {1: 0, 112: '?', 113: 0, 114: '?', 123: 0, 1255: 1, 134: 1}
-    test_clause = [[-111, -114], [116, 298], [160, 196, -160]]
+    test_dict = {111: '?', 114: '?', 116: '?', 298: '?', 160: '?', 196: '?', 161: '?', 138: '?', 489: '?', 982: '?', 274: '?'}
+    test_clause = [[-111, -114], [116, 298], [160, 196, 161, -138, 489, 982, 274]]
     # print(test_dict)
-    solver.values = test_dict
+    # solver.values = test_dict
+    # solver.unit_propagation()
     # solver.write_output(inputfile)
-    # solver.davis_putnam()
-    solver.chron_backtrack()
+    solver.davis_putnam(inputfile)
+    # solver.chron_backtrack()
+    # print(solver.clauses)
+    # solver.clauses = test_clause
+    # print(solver.update_watched_literals())
 
     # MAYBE ISSUE -225 IS FIRST RUNTHOUGH FOT GETTING VARS IN DICT??? MUST ALL ME POSITIVE
 
