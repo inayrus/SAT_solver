@@ -11,10 +11,10 @@ def dlcs(dict, clause_list):
     no_neg_clause_list = []
     for clause in clause_list:
         for clause_var in clause:
-            if clause_var < 0 and dict[clause_var] == '?':
+            if clause_var < 0 and dict[abs(clause_var)] == '?':
                 no_neg_clause_list.append(clause_var * -1)
                 neg_clause_list.append(clause_var * -1)
-            elif clause_var >= 0 and dict[clause_var] == '?':
+            elif clause_var >= 0 and dict[abs(clause_var)] == '?':
                 no_neg_clause_list.append(clause_var * 1)
                 pos_clause_list.append(clause_var)
 
@@ -42,11 +42,12 @@ def dlcs(dict, clause_list):
     cn = neg_clause_list.count(var_to_change)
 
     if cp > cn:
-        dict[var_to_change] = True
-        dict[(var_to_change * -1)] = False
+        dict[var_to_change] = 1
+        #dict[(var_to_change * -1)] = False
+
     else:
-        dict[var_to_change] = False
-        dict[(var_to_change * -1)] = True
+        dict[var_to_change] = 0
+        #dict[(var_to_change * -1)] = True
 
     # Return updated dict
     return dict

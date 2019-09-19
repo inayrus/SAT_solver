@@ -1,7 +1,7 @@
 import sys
 import pathlib
 import random
-
+import DLCS_Complete2
 
 class SAT(object):
     """Representation of a SAT solver"""
@@ -94,22 +94,28 @@ class SAT(object):
 
         while self.sat_or_unsat == False:
             # check for unit clauses
-            self.unit_propagation()
-
-            # branching
-            self.split_s1()
+            self.unit_propagation_loop()
 
             # update watched literals
             conflict = self.update_watched_literals()
-
-            # if conflict: backtracking
             if conflict:
+                # if conflict: backtracking
+                self.chron_backtrack()
+
+            # branching
+            self.split_s1()
+            # DLCS_Complete2.dlcs(self.values, self.clauses)
+
+            # update watched literals
+            conflict = self.update_watched_literals()
+            if conflict:
+                # if conflict: backtracking
                 self.chron_backtrack()
 
         # call output function if SAT or UNSAT
         self.write_output(file)
 
-    def unit_propagation(self):
+    def unit_propagation_loop(self):
         """
         looks through all the clauses for unit clauses,
         stores the unit clauses in a list to set to True/False
@@ -169,6 +175,7 @@ class SAT(object):
         # choose random unassigned variable
         unassigned = [key for (key, value) in self.values.items() if value == '?']
         if unassigned != []:
+            random.seed(9)
             chosen = random.choice(unassigned)
 
             # set the variable to true
@@ -179,13 +186,15 @@ class SAT(object):
 
             # create dependency var
             self.dependencies[chosen] = set()
-            print(self.dependencies)
+            print("new split: {}".format(self.choice_tree))
+        elif self.sat_or_unsat == True:
+            return
         else:
             print("no more literals to split")
             print("backtrack numbers: {}".format(self.backs))
-            print(self.choice_tree)
-            print(len(self.dependencies))
-            exit(1)
+            # print the truth value of the things in the watched literals
+            print("number empty clauses: {}".format(len([clause for clause in self.watched_literals if len(clause) == 0])))
+            self.sat_or_unsat = True
 
     def update_watched_literals(self):
         """
@@ -193,7 +202,6 @@ class SAT(object):
         counts how many clauses are true and updates self.sat_or_unsat if all clauses are true
         returns True if an empty clause is found, else it returns False
         """
-        # self.values = {111: 1, 114: '?', 116: 1, 298: 0, 160: 0, 196: '?', 161: 1, 138: 1, 489: '?', 982: '?', 274: '?'}
         print("updating watched lits")
         true_count = 0
 
@@ -201,6 +209,7 @@ class SAT(object):
         for clause_i, watched_clause in enumerate(self.watched_literals):
             to_remove= list()
 
+            # for clauses longer than 1
             if len(watched_clause) > 1:
                 for literal in watched_clause:
 
@@ -212,6 +221,7 @@ class SAT(object):
                     elif value == 1:
                         # count how many clauses are true
                         true_count += 1
+                        break
 
                 # remove here to prevent items being skipped
                 for literal in to_remove:
@@ -227,14 +237,20 @@ class SAT(object):
                         if len(watched_clause) == 2:
                             break
 
-                # return if watched list is empty (all literals are False)
-                if watched_clause == []:
-                    return True
+            # clauses of length one and that are true
+            elif len(watched_clause) == 1 and self.get_truth(watched_clause[0]) == 1:
+                true_count += 1
+
+            # return if watched list is empty (all literals are False)
+            if len(watched_clause) == 0:
+                return True
 
         # update attribute if all clauses are true
         if true_count == len(self.watched_literals):
             self.sat_or_unsat = True
+            print("THING IS SAT")
 
+        print("{} out of {} clauses are true".format(true_count, len(self.watched_literals)))
         return False
 
     def chron_backtrack(self):
@@ -262,6 +278,8 @@ class SAT(object):
             # if backtracked to first choice in choice_tree twice, return unsat
             if len(self.choice_tree) == 0:
                 self.sat_or_unsat = True
+                print("THING IS UNSAT")
+                print("number of backtracks: {}".format(self.backs))
                 return
 
             # remove the previous made split in choice tree
@@ -284,7 +302,7 @@ class SAT(object):
         self.set_truth(flip_lit, 0)
         self.choice_tree.append([flip_lit, False])
 
-        print("FORK::: BACKTRACK")
+        print("BACKTRACK: {}".format(self.choice_tree))
         # print("choice tree: {}".format(self.choice_tree))
         # print("values: {}".format(self.values))
 
@@ -395,7 +413,7 @@ class SAT(object):
         true_literals = list()
 
         for var in self.values:
-            if self.values[abs(var)] == 1:
+            if self.values[abs(var)] == 1 and var > 0:
                 true_literals.append(var)
         return true_literals
 
