@@ -69,16 +69,17 @@ class SAT(object):
         """
         watched_literals = []
         for clause in self.clauses:
-            wl_clause = []
-            for lit_i, literal in enumerate(clause):
-                if len(wl_clause) == 2:
-                    break
-                elif self.get_truth(literal) != 0:
-                    # if value not false, append index of the literal in its clause
-                    wl_clause.append(literal)
-            # append the wl_clause to watched_literals list
-            watched_literals.append(wl_clause)
-        print(watched_literals)
+            # store watched literals for clauses longer than 1
+            if len(clause) > 1:
+                wl_clause = []
+                for lit_i, literal in enumerate(clause):
+                    if len(wl_clause) == 2:
+                        break
+                    elif self.get_truth(literal) != 0:
+                        # if value not false, append index of the literal in its clause
+                        wl_clause.append(literal)
+                # append the wl_clause to watched_literals list
+                watched_literals.append(wl_clause)
         return watched_literals
 
     def davis_putnam(self, file):
@@ -102,15 +103,16 @@ class SAT(object):
                 # if conflict: backtracking
                 self.chron_backtrack()
 
-            # branching
-            self.split_s1()
-            # DLCS_Complete2.dlcs(self.values, self.clauses)
+            if self.sat_or_unsat == False:
+                # branching
+                self.split_s1()
+                # DLCS_Complete2.dlcs(self.values, self.clauses)
 
-            # update watched literals
-            conflict = self.update_watched_literals()
-            if conflict:
-                # if conflict: backtracking
-                self.chron_backtrack()
+            # # update watched literals
+            # conflict = self.update_watched_literals()
+            # if conflict:
+            #     # if conflict: backtracking
+            #     self.chron_backtrack()
 
         # call output function if SAT or UNSAT
         self.write_output(file)
@@ -175,7 +177,7 @@ class SAT(object):
         # choose random unassigned variable
         unassigned = [key for (key, value) in self.values.items() if value == '?']
         if unassigned != []:
-            random.seed(9)
+            random.seed(1)
             chosen = random.choice(unassigned)
 
             # set the variable to true
@@ -195,6 +197,7 @@ class SAT(object):
             # print the truth value of the things in the watched literals
             print("number empty clauses: {}".format(len([clause for clause in self.watched_literals if len(clause) == 0])))
             self.sat_or_unsat = True
+            exit(1)
 
     def update_watched_literals(self):
         """
@@ -232,23 +235,24 @@ class SAT(object):
                     for new_lit in self.clauses[clause_i]:
                         if new_lit not in watched_clause and self.get_truth(new_lit) != 0:
                             watched_clause.append(new_lit)
+                            #
+                            # if self.get_truth(new_lit) == 1:
+                            #     true_count += 1
+                            #     break
 
                         # break out of loop if 2 literals in watched list
                         if len(watched_clause) == 2:
                             break
-
-            # clauses of length one and that are true
-            elif len(watched_clause) == 1 and self.get_truth(watched_clause[0]) == 1:
-                true_count += 1
 
             # return if watched list is empty (all literals are False)
             if len(watched_clause) == 0:
                 return True
 
         # update attribute if all clauses are true
-        if true_count == len(self.watched_literals):
+        if true_count >= len(self.watched_literals):
             self.sat_or_unsat = True
             print("THING IS SAT")
+            print("backs: ", self.backs)
 
         print("{} out of {} clauses are true".format(true_count, len(self.watched_literals)))
         return False
