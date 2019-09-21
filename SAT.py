@@ -177,7 +177,7 @@ class SAT(object):
         # choose random unassigned variable
         unassigned = [key for (key, value) in self.values.items() if value == '?']
         if unassigned != []:
-            random.seed(1)
+            random.seed(9)
             chosen = random.choice(unassigned)
 
             # set the variable to true
