@@ -50,7 +50,7 @@ def iterative_dpll(inputfile):
         if [] in state_obj.clauses:
             conflict = True
 
-        # do unit propegation:
+        # do unit propagation:
         for clause in state_obj.clauses:
             if conflict:
                 break
@@ -71,8 +71,13 @@ def iterative_dpll(inputfile):
                         # TODO: IS DEPENDENCY LIST NECESSARY?
 
         # only do the below if there is NO conflict and there are unsolved clauses left (aka not [], when all clauses are removed)
+        if not conflict and len(state_obj.clauses) != 0:
 
             # get next random variable to assign
+            chosen = random_choice(state_obj)
+            child_obj
+            stack.append([state_obj, chosen, 1])
+            stack.append([state_obj, chosen, 0])
                 # (if it exists, else allow to backtrack --> var reached_end = True)
                 # (though reaching the end should not be an issue. bc by then it should have a solution or conflict)
                 # HHHH HOW DO YOU KNOW IF THERE ARE VARS TO CHOOSE LEFT
