@@ -11,7 +11,7 @@ class Puzzle_State(object):
         what does the puzzle state needs to know?
             dictionary with all the literals and their values
             a list with the active clauses
-            a list with the choices made so far
+            a list with the choices made so far --> this choice is what made the state as it is now
         """
         self.values = {}
         self.clauses = self.load_clauses(inputfile)
