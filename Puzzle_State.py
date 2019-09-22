@@ -114,7 +114,7 @@ class Puzzle_State(object):
         """
         value = self.get_truth(literal)
 
-        for clause in self.clauses:
+        for clause in [*self.clauses]:
             # only get clauses that have a version of the literal
             if literal in clause or -literal in clause:
                 # if the literal is true
@@ -133,7 +133,3 @@ class Puzzle_State(object):
                     # negated means whole clause is true
                     else:
                         self.clauses.remove(clause)
-
-
-
-

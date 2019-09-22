@@ -1,10 +1,5 @@
-# what does the puzzle state needs to know?
-    # dictionary with all the literals and their values
-    # a list with the active clauses
-    # a list with the choices made so far
-
-# dude's unresolved stands for the literals that should be yeeted from the clauses/ clause lists
 from Puzzle_State import Puzzle_State
+from DLCS_Complete2 import dlcs
 import sys
 import random
 import copy
@@ -30,7 +25,7 @@ def iterative_dpll(inputfile):
 
     # start while loop (while stack not empty)
     while stack:
-        print(len(stack))
+        print("states in stack: ", len(stack))
         # loop starts without conflict
         conflict = False
 
@@ -60,15 +55,19 @@ def iterative_dpll(inputfile):
                         # update the clauses
                         current_state.update_clauses(literal)
 
+            print("unit count:", unit_count)
+
         # only do the below if there is NO conflict and there are unsolved clauses left (aka not [], when all clauses are removed)
         if not conflict and len(current_state.clauses) != 0:
 
             # split variables
             chosen_literal = random_choice(current_state)
             truth_assignments = [0, 1]
+            # chosen_literal, truth_assignments = dlcs(current_state.values, current_state.clauses)
 
             # if there's a chosen literal (not everything is assigned yet)
             if chosen_literal:
+
                 # make children (all possibilities for the new variable)
                 for truth in truth_assignments:
                     child = copy.deepcopy(current_state)
@@ -83,7 +82,8 @@ def iterative_dpll(inputfile):
                     stack.append(child)
 
         # no clauses left: SAT, found a solution!
-        elif len(current_state.clauses) == 0:
+        if len(current_state.clauses) == 0:
+            print("SAT")
             # call write output on the instance.values dict
             write_output(file, current_state)
             exit(0)
@@ -91,7 +91,9 @@ def iterative_dpll(inputfile):
         # else, conflict. let the loop backtrack
 
     # broke out of while loop: UNSAT. write output with START puzzle state
+    print("UNSAT")
     write_output(file, start_state)
+    exit(0)
 
 
 def remove_tautologies(puzzle_obj):
@@ -117,7 +119,6 @@ def random_choice(puzzle_obj):
     Returns a random choice from unassigned literals
     Returns None if all literals are assigned
     """
-    random.seed(9)
     unassigned = [key for (key, value) in puzzle_obj.values.items() if value == '?']
     if unassigned:
         return random.choice(unassigned)

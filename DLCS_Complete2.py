@@ -1,7 +1,7 @@
 # This is example input
 dict = {111: False, -111: True, 112: '?', -112: '?', 113: '?', -113: '?', 114: True, -114: False, 115: False, -115: True, 122: True, -122: False}
 clause_list = [[111, 112, 113], [-111, 113, 115], [-111, 112, -114], [-111, 122]]
-print(dict)
+# print(dict)
 
 
 def dlcs(dict, clause_list):
@@ -42,13 +42,16 @@ def dlcs(dict, clause_list):
     cn = neg_clause_list.count(var_to_change)
 
     if cp > cn:
-        dict[var_to_change] = 1
+        # dict[var_to_change] = 1
         #dict[(var_to_change * -1)] = False
+        return var_to_change, [1, 0]
 
+    # try value 0 first
     else:
-        dict[var_to_change] = 0
+        # dict[var_to_change] = 0
         #dict[(var_to_change * -1)] = True
+        return var_to_change, [1, 0]
 
     # Return updated dict
-    return dict
+    # return dict
 
