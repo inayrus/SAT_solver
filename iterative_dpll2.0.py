@@ -1,5 +1,6 @@
 from Puzzle_State import Puzzle_State
 from DLCS_Complete2 import dlcs
+from omgconflicts import CDCL
 import sys
 import random
 import copy
@@ -35,29 +36,41 @@ def iterative_dpll(inputfile):
         # pop the last from the stack
         current_state = stack.pop()
 
+        if [] in current_state.clauses:
+            conflict = True
+            print("conflict before unit prop")
+
         # do unit propagation:
         unit_count = 1
+        found_units = set()
         while not conflict and unit_count > 0:
             unit_count = 0
             for clause in current_state.clauses:
                 # if clause is length one:
                 if len(clause) == 1:
-                    literal = clause[0]
                     unit_count += 1
+                    literal = clause[0]
+                    found_units.add(literal)
                     # check dict if it has a value that makes this clause False:
                     if current_state.get_truth(literal) == 0:
                         # if yes --> conflict
                         conflict = True
+                        print("civmbgu in unit")
                     else:
                         # set clauses of length 1 on true,
                         current_state.set_truth(literal, 1)
                         # update the clauses
-                        current_state.update_clauses(literal)
+                        conflict_lit = current_state.update_clauses(literal)
 
             if [] in current_state.clauses:
                 conflict = True
+                print("confl after umits")
 
             print("unit count:", unit_count)
+
+        # if len()
+        # add all found units of unit propagation to the dependency of choice tree
+        current_state.choice_tree[-1][-1] = list(found_units)
 
         # only do the below if there is NO conflict and there are unsolved clauses left (aka not [], when all clauses are removed)
         if not conflict and len(current_state.clauses) != 0:
@@ -76,12 +89,11 @@ def iterative_dpll(inputfile):
 
             # if there's a chosen literal (not everything is assigned yet)
             if chosen_literal:
-
                 # make children (all possibilities for the new variable)
                 for truth in truth_assignments:
                     child = copy.deepcopy(current_state)
                     # 1) add chosen var to choice tree
-                    child.choice_tree.append([chosen_literal, truth])
+                    child.choice_tree.append([chosen_literal, truth, list()])
                     # 2) change value in dictionary
                     child.set_truth(chosen_literal, truth)
                     # 3) update clauses with new truth assignment
@@ -89,6 +101,9 @@ def iterative_dpll(inputfile):
 
                     # add child to stack
                     stack.append(child)
+
+        if conflict_lit:
+            current_state = CDCL(conflict_lit, start_state, current_state)
 
         # no clauses left: SAT, found a solution!
         if len(current_state.clauses) == 0:

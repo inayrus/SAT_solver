@@ -15,7 +15,8 @@ class Puzzle_State(object):
         """
         self.values = {}
         self.clauses = self.load_clauses(inputfile)
-        self.choice_tree = []
+        self.choice_tree = [[None, None, [None]]]
+        self.weights = dict.fromkeys(self.values, 0)
 
     def load_clauses(self, clauses_file):
         """
@@ -25,7 +26,7 @@ class Puzzle_State(object):
         # https://stackoverflow.com/questions/28890268/parse-dimacs-cnf-file-python
         filepath = pathlib.Path(clauses_file)
 
-        # create a list for all the clauses
+        # create a list for all the clause
         clauses = list()
 
         # read in the file
@@ -57,6 +58,7 @@ class Puzzle_State(object):
         """
         if abs(literal) not in self.values:
             self.values[abs(literal)] = '?'
+
 
     def get_truth(self, literal):
         """
@@ -113,6 +115,7 @@ class Puzzle_State(object):
         removes only literals that are now false
         """
         value = self.get_truth(literal)
+        conflict_lit = None
 
         for clause in [*self.clauses]:
             # only get clauses that have a version of the literal
@@ -124,12 +127,23 @@ class Puzzle_State(object):
                         self.clauses.remove(clause)
                     # negated literals become false --> remove from clause
                     else:
+                        # return the conflict literal
+                        if len(clause) == 1:
+                            conflict_lit = -literal
                         clause.remove(-literal)
+                        # return conflict_lit
+
                 # if the literal is false
                 else:
                     # false: remove literal from clause
                     if literal in clause:
+                        # return the conflict literal
+                        if len(clause) == 1:
+                            conflict_lit = literal
                         clause.remove(literal)
                     # negated means whole clause is true
                     else:
                         self.clauses.remove(clause)
+        if conflict_lit:
+            print('conflict bitch', conflict_lit)
+        return conflict_lit
