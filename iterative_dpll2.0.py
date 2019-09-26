@@ -36,10 +36,6 @@ def iterative_dpll(inputfile):
         # pop the last from the stack
         current_state = stack.pop()
 
-        if [] in current_state.clauses:
-            conflict = True
-            print("conflict before unit prop")
-
         # do unit propagation:
         unit_count = 1
         found_units = set()
@@ -55,20 +51,17 @@ def iterative_dpll(inputfile):
                     if current_state.get_truth(literal) == 0:
                         # if yes --> conflict
                         conflict = True
-                        print("civmbgu in unit")
                     else:
                         # set clauses of length 1 on true,
                         current_state.set_truth(literal, 1)
                         # update the clauses
                         conflict_lit = current_state.update_clauses(literal)
-
-            if [] in current_state.clauses:
-                conflict = True
-                print("confl after umits")
+                # if a clause is empty
+                elif len(clause) == 0:
+                    conflict = True
 
             print("unit count:", unit_count)
 
-        # if len()
         # add all found units of unit propagation to the dependency of choice tree
         current_state.choice_tree[-1][-1] = list(found_units)
 
@@ -85,7 +78,7 @@ def iterative_dpll(inputfile):
                 print('Second heuristic is to be continued. Please enter another.')
                 quit()
 
-            print(chosen_literal)
+            print("split literal", chosen_literal)
 
             # if there's a chosen literal (not everything is assigned yet)
             if chosen_literal:
@@ -102,12 +95,12 @@ def iterative_dpll(inputfile):
                     # add child to stack
                     stack.append(child)
 
-        if conflict_lit:
-            current_state = CDCL(conflict_lit, start_state, current_state)
+        # if conflict_lit:
+        #     current_state = CDCL(conflict_lit, start_state, current_state)
 
         # no clauses left: SAT, found a solution!
         if len(current_state.clauses) == 0:
-            print("SAT")
+            print("SAT. solution saved in {}.out".format(get_extensionless(inputfile)))
             # call write output on the instance.values dict
             write_output(file, current_state)
             exit(0)
@@ -115,7 +108,7 @@ def iterative_dpll(inputfile):
         # else, conflict. let the loop backtrack
 
     # broke out of while loop: UNSAT. write output with START puzzle state
-    print("UNSAT")
+    print("UNSAT. solution saved in {}.out".format(get_extensionless(inputfile)))
     write_output(file, start_state)
     exit(0)
 
@@ -149,14 +142,13 @@ def random_choice(puzzle_obj):
     else:
         return None
 
-def write_output(filename, puzzle_obj):
+def write_output(file, puzzle_obj):
         """
         Takes a dictionary with values and their truth assignment and writes it
         to a file in DIMACS notation.
         """
         # check if inputfile has the .txt extension, if yes, remove it
-        if ".txt" in filename:
-            filename = filename.split(".")[0]
+        filename = get_extensionless(file)
 
         # get a list with all literals that are True
         true_literals = filter_true_literals(puzzle_obj)
@@ -176,6 +168,13 @@ def write_output(filename, puzzle_obj):
             # write the literals
             for var in true_literals:
                 writer.write("{} 0\n".format(str(var)))
+
+def get_extensionless(filename):
+    """returns the filename without extension"""
+    if ".txt" in filename:
+        return filename.split(".")[0]
+    else:
+        return filename
 
 def filter_true_literals(puzzle_obj):
         """
