@@ -1,7 +1,7 @@
 import sys
 import pathlib
 import random
-import DLCS_Complete2
+import DLCS_Complete
 
 class SAT(object):
     """Representation of a SAT solver"""
@@ -452,16 +452,7 @@ if __name__ == "__main__":
     # test lineeeesss
     test_dict = {111: '?', 114: '?', 116: '?', 298: '?', 160: '?', 196: '?', 161: '?', 138: '?', 489: '?', 982: '?', 274: '?'}
     test_clause = [[-111, -114], [116, 298], [160, 196, 161, -138, 489, 982, 274]]
-    # print(test_dict)
-    # solver.values = test_dict
-    # solver.unit_propagation()
-    # solver.write_output(inputfile)
-    solver.davis_putnam(inputfile)
-    # solver.chron_backtrack()
-    # print(solver.clauses)
-    # solver.clauses = test_clause
-    # print(solver.update_watched_literals())
 
-    # MAYBE ISSUE -225 IS FIRST RUNTHOUGH FOT GETTING VARS IN DICT??? MUST ALL ME POSITIVE
+    solver.davis_putnam(inputfile)
 
     print("mlep")

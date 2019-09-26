@@ -1,5 +1,6 @@
 from Puzzle_State import Puzzle_State
-from DLCS_Complete2 import dlcs
+from DLCS_Complete import dlcs
+from omgconflicts import CDCL
 import sys
 import random
 import copy
@@ -10,6 +11,9 @@ def iterative_dpll(inputfile):
     """
     SAT algorithm that loops iteratively though the search space
     """
+    # Choose the heuristic
+    heuristic = int(input('Please enter 1, 2 or 3 for basic DPLL, the first heuristic or second heuristic, respectively: '))
+
     # initialize puzzle start state and stack
     start_state = Puzzle_State(inputfile)
     stack = []
@@ -21,8 +25,6 @@ def iterative_dpll(inputfile):
     first_state = copy.deepcopy(start_state)
     stack.append(first_state)
 
-    # TODO: what do if there are no more literals to assign randomly choose? how to just skip code and let it backtrack
-
     # start while loop (while stack not empty)
     while stack:
         print("states in stack: ", len(stack))
@@ -32,19 +34,17 @@ def iterative_dpll(inputfile):
         # pop the last from the stack
         current_state = stack.pop()
 
-        # look for clauses with length 0 --> conflict
-        if [] in current_state.clauses:
-            conflict = True
-
         # do unit propagation:
         unit_count = 1
+        found_units = set()
         while not conflict and unit_count > 0:
             unit_count = 0
             for clause in current_state.clauses:
                 # if clause is length one:
                 if len(clause) == 1:
-                    literal = clause[0]
                     unit_count += 1
+                    literal = clause[0]
+                    found_units.add(literal)
                     # check dict if it has a value that makes this clause False:
                     if current_state.get_truth(literal) == 0:
                         # if yes --> conflict
@@ -53,26 +53,38 @@ def iterative_dpll(inputfile):
                         # set clauses of length 1 on true,
                         current_state.set_truth(literal, 1)
                         # update the clauses
-                        current_state.update_clauses(literal)
+                        conflict_lit = current_state.update_clauses(literal)
+                # if a clause is empty
+                elif len(clause) == 0:
+                    conflict = True
 
             print("unit count:", unit_count)
+
+        # add all found units of unit propagation to the dependency of choice tree
+        current_state.choice_tree[-1][-1] = list(found_units)
 
         # only do the below if there is NO conflict and there are unsolved clauses left (aka not [], when all clauses are removed)
         if not conflict and len(current_state.clauses) != 0:
 
-            # split variables
-            chosen_literal = random_choice(current_state)
-            truth_assignments = [0, 1]
-            # chosen_literal, truth_assignments = dlcs(current_state.values, current_state.clauses)
+            #split variables
+            if heuristic == 1:
+                chosen_literal = random_choice(current_state)
+                truth_assignments = [0, 1]
+            elif heuristic == 2:
+                chosen_literal, truth_assignments = dlcs(current_state.values, current_state.clauses)
+            else:
+                print('Second heuristic is to be continued. Please enter another.')
+                quit()
+
+            print("split literal", chosen_literal)
 
             # if there's a chosen literal (not everything is assigned yet)
             if chosen_literal:
-
                 # make children (all possibilities for the new variable)
                 for truth in truth_assignments:
                     child = copy.deepcopy(current_state)
                     # 1) add chosen var to choice tree
-                    child.choice_tree.append([chosen_literal, truth])
+                    child.choice_tree.append([chosen_literal, truth, list()])
                     # 2) change value in dictionary
                     child.set_truth(chosen_literal, truth)
                     # 3) update clauses with new truth assignment
@@ -81,18 +93,21 @@ def iterative_dpll(inputfile):
                     # add child to stack
                     stack.append(child)
 
+        # if conflict_lit:
+        #     current_state = CDCL(conflict_lit, start_state, current_state)
+
         # no clauses left: SAT, found a solution!
         if len(current_state.clauses) == 0:
-            print("SAT")
+            print("SAT. solution saved in {}.out".format(get_extensionless(inputfile)))
             # call write output on the instance.values dict
-            write_output(file, current_state)
+            write_output(inputfile, current_state)
             exit(0)
 
         # else, conflict. let the loop backtrack
 
     # broke out of while loop: UNSAT. write output with START puzzle state
-    print("UNSAT")
-    write_output(file, start_state)
+    print("UNSAT. solution saved in {}.out".format(get_extensionless(inputfile)))
+    write_output(inputfile, start_state)
     exit(0)
 
 
@@ -125,14 +140,13 @@ def random_choice(puzzle_obj):
     else:
         return None
 
-def write_output(filename, puzzle_obj):
+def write_output(file, puzzle_obj):
         """
         Takes a dictionary with values and their truth assignment and writes it
         to a file in DIMACS notation.
         """
         # check if inputfile has the .txt extension, if yes, remove it
-        if ".txt" in filename:
-            filename = filename.split(".")[0]
+        filename = get_extensionless(file)
 
         # get a list with all literals that are True
         true_literals = filter_true_literals(puzzle_obj)
@@ -153,6 +167,15 @@ def write_output(filename, puzzle_obj):
             for var in true_literals:
                 writer.write("{} 0\n".format(str(var)))
 
+def get_extensionless(filename):
+    """returns the filename without extension"""
+    if ".txt" in filename:
+        filename = filename.split(".")[0]
+    if "/" in filename:
+        filename = filename.split("/")[-1]
+
+    return filename
+
 def filter_true_literals(puzzle_obj):
         """
         takes self.values,
@@ -167,7 +190,30 @@ def filter_true_literals(puzzle_obj):
 
 
 if __name__ == "__main__":
-    # NEED TO ADD ALL CONTROLS OF SAT FILE
-    file = sys.argv[2]
+    # read the commandline args ("SAT -Sn inputfile")
 
-    iterative_dpll(file)
+    # ensure correct usage
+    if len(sys.argv) != 3:
+        print("usage: python SAT.py -Sn inputfile.txt")
+        exit(1)
+
+    # ensure the strategy number is valid
+    n_strategy = int(sys.argv[1][-1])
+    if n_strategy < 1 or n_strategy > 3:
+        print("usage: pick 1, 2, or 3 as strategy number, ex. -S1")
+        exit(1)
+
+    inputfile = sys.argv[2]
+    # add extension if absent
+    if ".txt" not in inputfile:
+        inputfile = inputfile + ".txt"
+    # ensure the file exist
+    path = pathlib.Path(inputfile)
+    if not path.exists():
+        print("{} does not exist".format(inputfile))
+        exit(1)
+
+    # run loop
+    iterative_dpll(inputfile)
+
+    # TODO: turn this file into a SAT class, with weights as one of its attributes
