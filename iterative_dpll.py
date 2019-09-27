@@ -125,15 +125,16 @@ def iterative_dpll(inputfile):
                     stack.append(child)
 
         if heuristic == 3 and conflict_lit:
-            current_state, variable_weights, back_to_level, bak_to_literal = CDCL(conflict_lit, start_state, current_state, variable_weights)
+            current_state, variable_weights, back_to_level = CDCL(conflict_lit, start_state, current_state, variable_weights)
             print("ye")
 
             #### non chrono backtrack
             # went to level 0 --> unsat
-            if bak_to_literal == None:
+            if back_to_level == 0:
                 stack = []
 
             else:
+                bak_to_literal = current_state.choice_tree[back_to_level][0]
                 for state in reversed(stack):
                     if state.choice_tree[-1][0] == bak_to_literal:
                         i = stack.index(state)

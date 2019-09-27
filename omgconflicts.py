@@ -59,29 +59,9 @@ def CDCL(conflict_lit, start_obj, current_state, variable_weights):
                 print("1")
                 print(current_state.choice_tree[c_index])
                 print('back to level', back_to_level)
-                littt = current_state.choice_tree[back_to_level][0]
+
                 # return stuff
-                return current_state, variable_weights, back_to_level, littt
+                return current_state, variable_weights, back_to_level
                 # break
 
-
-
-    # back_to_level -= 2
-
-    #currrent_state.choice_tree(back_to_level)
-
-    # print('len choice', len(current_state.choice_tree))
-    # print('back', back_to_level)
-    # print("btl literal", current_state.choice_tree[back_to_level][0])
-    # print("btl value", current_state.choice_tree[back_to_level][1])
-    #current_state(back_to_level)
-
-        # for choice_i, choice in enumerate(reversed(current_state.choice_tree)):
-        #     for conflicting in conflict_list:
-        #         if abs(conflicting) in choice[2]:
-        #             back_to_level = choice_i
-        #             break
-
-    # littt = current_state.choice_tree[back_to_level][0]
-    # # return stuff
-    # return current_state, variable_weights, back_to_level, littt
+    return current_state, variable_weights, back_to_level
