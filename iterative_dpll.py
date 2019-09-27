@@ -53,10 +53,10 @@ def iterative_dpll(inputfile):
                         # set clauses of length 1 on true,
                         current_state.set_truth(literal, 1)
                         # update the clauses
-                        conflict_lit = current_state.update_clauses(literal)
-                # if a clause is empty
-                elif len(clause) == 0:
-                    conflict = True
+                        conflict_lit, conflict = current_state.update_clauses(literal)
+                # stop for loop if conflict
+                if conflict:
+                    break
 
             print("unit count:", unit_count)
 

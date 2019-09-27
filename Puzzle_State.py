@@ -116,6 +116,7 @@ class Puzzle_State(object):
         """
         value = self.get_truth(literal)
         conflict_lit = None
+        conflict = False
 
         for clause in [*self.clauses]:
             # only get clauses that have a version of the literal
@@ -146,4 +147,5 @@ class Puzzle_State(object):
                         self.clauses.remove(clause)
         if conflict_lit:
             print('conflict bitch', conflict_lit)
-        return conflict_lit
+            conflict = True
+        return conflict_lit, conflict
