@@ -1,0 +1,10 @@
+c Literals with value True based on clauses in clause_test_slides
+p cnf 8 8
+1 0
+4 0
+8 0
+2 0
+11 0
+7 0
+9 0
+10 0

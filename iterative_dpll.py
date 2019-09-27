@@ -5,6 +5,7 @@ import sys
 import random
 import copy
 import pathlib
+from collections import Counter
 
 
 def iterative_dpll(inputfile):
@@ -16,7 +17,9 @@ def iterative_dpll(inputfile):
 
     # initialize puzzle start state and stack
     start_state = Puzzle_State(inputfile)
+    variable_weights = dict.fromkeys(start_state.values, 0)
     stack = []
+    previous_split = []
 
     # remove tautologies
     remove_tautologies(start_state)
@@ -30,6 +33,7 @@ def iterative_dpll(inputfile):
         print("states in stack: ", len(stack))
         # loop starts without conflict
         conflict = False
+        conflict_lit = None
 
         # pop the last from the stack
         current_state = stack.pop()
@@ -72,9 +76,36 @@ def iterative_dpll(inputfile):
                 truth_assignments = [0, 1]
             elif heuristic == 2:
                 chosen_literal, truth_assignments = dlcs(current_state.values, current_state.clauses)
+            elif heuristic == 3:
+                # weights list
+                heaviest_weights = Counter(variable_weights).most_common()
+
+                # get literals that are unassigned
+                unassigned = get_unassigned(current_state)
+
+                # choose the unassigned literal with the heaviest weight
+                for weight in heaviest_weights:
+                    if weight[0] in unassigned:
+                        chosen_literal = weight[0]
+                        break
+
+                truth_assignments = [0,1]
+
+                # print('heavy shit', len(heaviest_weights))
+                # if heaviest_weights[0][1] == 0 and heaviest_weights[0][0] not in previous_split and get_truth(heaviest_weights[0][1] == False):
+                #     chosen_literal = random_choice(current_state)
+                # elif heaviest_weights[0][0] in previous_split:
+                #     chosen_literal = heaviest_weights[len(previous_split)][0]
+                # else:
+                #     chosen_literal = heaviest_weights[0][0]
+                # previous_split.append(chosen_literal)
+                # truth_assignments = [0,1]
+                # print('prev', len(previous_split))
+
             else:
-                print('Second heuristic is to be continued. Please enter another.')
-                quit()
+                chosen_literal = current_state.clauses[0][0]
+                truth_assignments = [1, 0]
+                # quit()
 
             print("split literal", chosen_literal)
 
@@ -93,8 +124,23 @@ def iterative_dpll(inputfile):
                     # add child to stack
                     stack.append(child)
 
-        # if conflict_lit:
-        #     current_state = CDCL(conflict_lit, start_state, current_state)
+        if heuristic == 3 and conflict_lit:
+            current_state, variable_weights, back_to_level, bak_to_literal = CDCL(conflict_lit, start_state, current_state, variable_weights)
+            print("ye")
+
+            #### non chrono backtrack
+            # went to level 0 --> unsat
+            if bak_to_literal == None:
+                stack = []
+
+            else:
+                for state in reversed(stack):
+                    if state.choice_tree[-1][0] == bak_to_literal:
+                        i = stack.index(state)
+                        new_stack = stack[0:i+1]
+                        stack = new_stack
+                        print(state)
+
 
         # no clauses left: SAT, found a solution!
         if len(current_state.clauses) == 0:
@@ -134,11 +180,16 @@ def random_choice(puzzle_obj):
     Returns a random choice from unassigned literals
     Returns None if all literals are assigned
     """
-    unassigned = [key for (key, value) in puzzle_obj.values.items() if value == '?']
+    unassigned = get_unassigned(puzzle_obj)
     if unassigned:
         return random.choice(unassigned)
     else:
         return None
+
+def get_unassigned(puzzle_obj):
+    """returns a list with unassigned variables"""
+    unassigned = [key for (key, value) in puzzle_obj.values.items() if value == '?']
+    return unassigned
 
 def write_output(file, puzzle_obj):
         """

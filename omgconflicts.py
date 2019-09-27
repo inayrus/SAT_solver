@@ -9,13 +9,13 @@ def CDCL(conflict_lit, start_obj, current_state, variable_weights):
     for clause in start_obj.clauses:
         if conflict_lit in clause or -conflict_lit in clause:
             for literal in clause:
-                if literal != conflict_lit:
-                    conflict_list.append(literal)
+                if literal != conflict_lit and literal != -conflict_lit:
+                    conflict_list.append(abs(literal))
 
     # to remove double literals
     conflict_list = list(set(conflict_list))
     print('conflict lsit', conflict_list)
-    current_state.clauses.append(conflict_list)
+    current_state.clauses.insert(0, conflict_list)
 
     # # UPDATE WEIGHTS
     # update weights. bump weights for conflict contributing literals
@@ -44,15 +44,26 @@ def CDCL(conflict_lit, start_obj, current_state, variable_weights):
     #     i -= 1
 
     back_to_level = 0
-    for c_state in reversed(current_state.choice_tree):
+    cut_tree = current_state.choice_tree[1::]
+    # reversed_cut_tree = reversed(current_state.choice_tree)
+    # reversed_realcut = reversed_cut_tree[1::]
+    for c_state in reversed(cut_tree):
         c_index = current_state.choice_tree.index(c_state)
         print('len choice tree', len(current_state.choice_tree))
         print('c index', c_index)
+        variabele_tree = current_state.choice_tree[c_index][0]
+        dependencies_tree = current_state.choice_tree[c_index][2]
         for conflicting in conflict_list:
-            if ((abs(conflicting) == current_state.choice_tree[c_index][0]) or (abs(conflicting) in current_state.choice_tree[c_index][2]) or (conflicting == current_state.choice_tree[c_index][0]) or (conflicting in current_state.choice_tree[c_index][2])) and not current_state.choice_tree[len(current_state.choice_tree) -1]:
+            if (-conflicting == variabele_tree) or (-conflicting in dependencies_tree) or conflicting == variabele_tree or conflicting in dependencies_tree:
                 back_to_level = c_index
+                print("1")
+                print(current_state.choice_tree[c_index])
+                print('back to level', back_to_level)
+                littt = current_state.choice_tree[back_to_level][0]
+                # return stuff
+                return current_state, variable_weights, back_to_level, littt
+                # break
 
-    print('back to level', back_to_level)
 
 
     # back_to_level -= 2
@@ -71,5 +82,6 @@ def CDCL(conflict_lit, start_obj, current_state, variable_weights):
         #             back_to_level = choice_i
         #             break
 
-    # return stuff
-    return current_state, variable_weights, back_to_level, current_state.choice_tree[back_to_level][0]
+    # littt = current_state.choice_tree[back_to_level][0]
+    # # return stuff
+    # return current_state, variable_weights, back_to_level, littt

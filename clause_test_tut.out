@@ -1,0 +1,7 @@
+c Literals with value True based on clauses in clause_test_tut
+p cnf 5 5
+2 0
+3 0
+4 0
+5 0
+7 0
