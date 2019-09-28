@@ -8,18 +8,20 @@ import pathlib
 from collections import Counter
 
 
-def iterative_dpll(inputfile):
+def iterative_dpll(subdirname, heuristic, inputfile):
     """
     SAT algorithm that loops iteratively though the search space
     """
-    # Choose the heuristic
-    heuristic = int(input('Please enter 1, 2 or 3 for basic DPLL, the first heuristic or second heuristic, respectively: '))
 
+    # h
+    #heuristic = input('Enter heur: ')
     # initialize puzzle start state and stack
     start_state = Puzzle_State(inputfile)
     variable_weights = dict.fromkeys(start_state.values, 0)
     stack = []
     previous_split = []
+    N_backtracks = 0
+    times_run = 0
 
     # remove tautologies
     remove_tautologies(start_state)
@@ -30,6 +32,7 @@ def iterative_dpll(inputfile):
 
     # start while loop (while stack not empty)
     while stack:
+        times_run += 1
         print("states in stack: ", len(stack))
         # loop starts without conflict
         conflict = False
@@ -60,9 +63,15 @@ def iterative_dpll(inputfile):
                         conflict_lit, conflict = current_state.update_clauses(literal)
                 # stop for loop if conflict
                 if conflict:
+                    N_backtracks += 1
                     break
 
             print("unit count:", unit_count)
+
+        # calculate clause to variable rate
+        if times_run == 1:
+            clause_var = len(current_state.clauses)/81
+            print('clause', clause_var)
 
         # add all found units of unit propagation to the dependency of choice tree
         current_state.choice_tree[-1][-1] = list(found_units)
@@ -147,16 +156,19 @@ def iterative_dpll(inputfile):
         if len(current_state.clauses) == 0:
             print("SAT. solution saved in {}.out".format(get_extensionless(inputfile)))
             # call write output on the instance.values dict
-            write_output(inputfile, current_state)
-            exit(0)
+            write_output(subdirname, inputfile, current_state, heuristic)
+            print('N back', N_backtracks)
+            #exit(0)
+            return
 
         # else, conflict. let the loop backtrack
 
     # broke out of while loop: UNSAT. write output with START puzzle state
     print("UNSAT. solution saved in {}.out".format(get_extensionless(inputfile)))
-    write_output(inputfile, start_state)
-    exit(0)
-
+    write_output(subdirname, inputfile, start_state, heuristic)
+    print('N back', N_backtracks)
+    #exit(0)
+    return
 
 def remove_tautologies(puzzle_obj):
     """
@@ -192,7 +204,7 @@ def get_unassigned(puzzle_obj):
     unassigned = [key for (key, value) in puzzle_obj.values.items() if value == '?']
     return unassigned
 
-def write_output(file, puzzle_obj):
+def write_output(subdirname, file, puzzle_obj, heuristic):
         """
         Takes a dictionary with values and their truth assignment and writes it
         to a file in DIMACS notation.
@@ -205,7 +217,8 @@ def write_output(file, puzzle_obj):
         n_true_lits = len(true_literals)
 
         # check if filename.out already exists
-        filepath = pathlib.Path(filename + '.out')
+
+        filepath = pathlib.Path(filename + '-' + str(subdirname) + '-' + str(heuristic) + '.out')
 
         # write to 'filename.out'
         with filepath.open(mode='w') as writer:
