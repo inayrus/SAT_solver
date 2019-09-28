@@ -2,7 +2,7 @@
 
 def fancyoutput(difficulty, filename, heuristic, benchmark, cv_ratio):
     fancy_output = open("fancy_output", "a")
-    short_filename = filename.split("/")
+    short_filename = filename.split("\\")
     short_filename = short_filename[-1]
-    fancy_output.write(difficulty + ' ' + short_filename + ' ' + str(heuristic) + ' ' + str(benchmark) + ' ' + str(cv_ratio) + '\n')
+    fancy_output.write(short_filename + ',' + difficulty + ',' + str(heuristic) + ',' + str(benchmark) + ',' + str(cv_ratio) + '\n')
 
