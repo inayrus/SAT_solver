@@ -1,6 +1,7 @@
 from Puzzle_State import Puzzle_State
 from DLCS_Complete import dlcs
 from omgconflicts import CDCL
+from fancyoutput import fancyoutput
 import sys
 import random
 import copy
@@ -157,6 +158,7 @@ def iterative_dpll(subdirname, heuristic, inputfile):
             print("SAT. solution saved in {}.out".format(get_extensionless(inputfile)))
             # call write output on the instance.values dict
             write_output(subdirname, inputfile, current_state, heuristic)
+            fancyoutput(subdirname, inputfile, heuristic, N_backtracks, clause_var)
             print('N back', N_backtracks)
             #exit(0)
             return
@@ -166,6 +168,7 @@ def iterative_dpll(subdirname, heuristic, inputfile):
     # broke out of while loop: UNSAT. write output with START puzzle state
     print("UNSAT. solution saved in {}.out".format(get_extensionless(inputfile)))
     write_output(subdirname, inputfile, start_state, heuristic)
+    fancyoutput(subdirname, inputfile, heuristic, N_backtracks, clause_var)
     print('N back', N_backtracks)
     #exit(0)
     return
@@ -231,6 +234,7 @@ def write_output(subdirname, file, puzzle_obj, heuristic):
             # write the literals
             for var in true_literals:
                 writer.write("{} 0\n".format(str(var)))
+
 
 def get_extensionless(filename):
     """returns the filename without extension"""
