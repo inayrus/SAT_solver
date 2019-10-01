@@ -8,7 +8,6 @@ import copy
 import pathlib
 from collections import Counter
 
-
 def iterative_dpll(subdirname, heuristic, inputfile):
     """
     SAT algorithm that loops iteratively though the search space
@@ -69,9 +68,17 @@ def iterative_dpll(subdirname, heuristic, inputfile):
 
             print("unit count:", unit_count)
 
+
         # calculate clause to variable rate
         if times_run == 1:
             clause_var = len(current_state.clauses)/81
+            clause2_var = len(current_state.clauses)/729
+            un_assigned = get_unassigned(current_state)
+            print('len unass', len(un_assigned))
+            if len(un_assigned) != 0:
+                clause3_var = len(current_state.clauses)/len(un_assigned)
+            else:
+                clause3_var = 0
             print('clause', clause_var)
 
         # add all found units of unit propagation to the dependency of choice tree
@@ -84,6 +91,7 @@ def iterative_dpll(subdirname, heuristic, inputfile):
             if heuristic == 1:
                 chosen_literal = random_choice(current_state)
                 truth_assignments = [0, 1]
+                print('splitttt')
             elif heuristic == 2:
                 chosen_literal, truth_assignments = dlcs(current_state.values, current_state.clauses)
             elif heuristic == 3:
@@ -158,8 +166,17 @@ def iterative_dpll(subdirname, heuristic, inputfile):
             print("SAT. solution saved in {}.out".format(get_extensionless(inputfile)))
             # call write output on the instance.values dict
             write_output(subdirname, inputfile, current_state, heuristic)
-            fancyoutput(subdirname, inputfile, heuristic, N_backtracks, clause_var)
+            fancyoutput(subdirname, inputfile, heuristic, N_backtracks, clause_var, clause2_var, clause3_var)
             print('N back', N_backtracks)
+            # Ascii art retrieved from http://www.patorjk.com
+            print('''
+               ___     ___    _____  
+              / __|   /   \  |_   _| 
+              \__ \   | - |    | |   
+              |___/   |_|_|   _|_|_  
+            _|"""""|_|"""""|_|"""""| 
+            "`-0-0-'"`-0-0-'"`-0-0-' 
+            ''')
             #exit(0)
             return
 
@@ -168,9 +185,20 @@ def iterative_dpll(subdirname, heuristic, inputfile):
     # broke out of while loop: UNSAT. write output with START puzzle state
     print("UNSAT. solution saved in {}.out".format(get_extensionless(inputfile)))
     write_output(subdirname, inputfile, start_state, heuristic)
-    fancyoutput(subdirname, inputfile, heuristic, N_backtracks, clause_var)
+    fancyoutput(subdirname, inputfile, heuristic, N_backtracks, clause_var, clause2_var, clause3_var)
     print('N back', N_backtracks)
     #exit(0)
+    # Ascii art retrieved from http://www.patorjk.com
+    print('''
+              ██████  ▄▄▄     ▄▄▄█████▓ ███▄    █ ▓█████   ██████   ██████ 
+            ▒██    ▒ ▒████▄   ▓  ██▒ ▓▒ ██ ▀█   █ ▓█   ▀ ▒██    ▒ ▒██    ▒ 
+            ░ ▓██▄   ▒██  ▀█▄ ▒ ▓██░ ▒░▓██  ▀█ ██▒▒███   ░ ▓██▄   ░ ▓██▄   
+              ▒   ██▒░██▄▄▄▄██░ ▓██▓ ░ ▓██▒  ▐▌██▒▒▓█  ▄   ▒   ██▒  ▒   ██▒
+            ▒██████▒▒ ▓█   ▓██▒ ▒██▒ ░ ▒██░   ▓██░░▒████▒▒██████▒▒▒██████▒▒
+            ▒ ▒▓▒ ▒ ░ ▒▒   ▓▒█░ ▒ ░░   ░ ▒░   ▒ ▒ ░░ ▒░ ░▒ ▒▓▒ ▒ ░▒ ▒▓▒ ▒ ░
+            ░ ░▒  ░ ░  ▒   ▒▒ ░   ░    ░ ░░   ░ ▒░ ░ ░  ░░ ░▒  ░ ░░ ░▒  ░ ░
+            ░  ░  ░    ░   ▒    ░         ░   ░ ░    ░   ░  ░  ░  ░  ░  ░  
+                  ░        ░  ░                 ░    ░  ░      ░        ░  ''')
     return
 
 def remove_tautologies(puzzle_obj):
@@ -218,13 +246,14 @@ def write_output(subdirname, file, puzzle_obj, heuristic):
         # get a list with all literals that are True
         true_literals = filter_true_literals(puzzle_obj)
         n_true_lits = len(true_literals)
+        print('true lit', n_true_lits)
 
         # check if filename.out already exists
-
-        filepath = pathlib.Path(filename + '-' + str(subdirname) + '-' + str(heuristic) + '.out')
+        #filepath = pathlib.Path(filename + '.out')
+        file_path = pathlib.Path(filename + '-' + str(subdirname) + '-' + str(heuristic) + '.out')
 
         # write to 'filename.out'
-        with filepath.open(mode='w') as writer:
+        with file_path.open(mode='w') as writer:
             # comment
             writer.write("c Literals with value True based on clauses in {}\n".format(filename))
 
