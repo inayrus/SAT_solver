@@ -1,3 +1,10 @@
+"""
+File that contains functions to run the third DPLL heuristic in SAT.py:
+VSIDS split with clause learning and non-chronological backtracking.
+
+by Sanne van den Berg and Valerie Sawirja
+"""
+
 from collections import Counter
 
 
@@ -12,7 +19,7 @@ def CDCL(conflict_lit, start_obj, current_state, variable_weights):
     # decay factor 0.95. Decays after every conflict
     decay_factor = 0.95
 
-    # 1)
+    # 1) create a conflict clause
     conflict_list = []
 
     # select all literals in which conflict lit appears
@@ -25,21 +32,19 @@ def CDCL(conflict_lit, start_obj, current_state, variable_weights):
     # return list with removed double literals
     conflict_list = list(set(conflict_list))
 
-    # 2)
-    # add conflict clause to current state
+    # 2) add conflict clause to current state
     current_state.clauses.insert(0, conflict_list)
 
-    # 3)
-    # update weights. bump weights for conflict contributing literals
+    # 3) update weights: bump weights for conflict contributing literals
     no_negconflicts = list(set([abs(literal) for literal in conflict_list]))
     for literal in no_negconflicts:
         variable_weights[literal] += 1
 
     # decay all weights with decay_factor
-    for literal in current_state.weights:
+    for literal in current_state.values:
         variable_weights[literal] *= decay_factor
 
-    # 4)
+    # 4) determine non-chrono backtrack
     back_to_literal = None
     cut_tree = current_state.choice_tree[1::]
 
@@ -60,7 +65,11 @@ def CDCL(conflict_lit, start_obj, current_state, variable_weights):
 
     return current_state, variable_weights, back_to_literal
 
-def vsids(current_state, variable_weights):
+def vsids_split(current_state, variable_weights):
+    """
+    Function picks the variable with the highest weight and is yet unassigned.
+    Returns the chosen literal (int).
+    """
     # weights list
     heaviest_weights = Counter(variable_weights).most_common()
 
@@ -72,3 +81,21 @@ def vsids(current_state, variable_weights):
         if weight[0] in unassigned:
             chosen_literal = weight[0]
             return chosen_literal
+
+def non_chrono_backtrack(stack, back_to_literal):
+    """
+    Finds the state in the stack that should be backtracked to,
+    throws everything after that state out of the stack,
+    returns the updated stack.
+    """
+
+    # no literal to return to --> unsat
+    if back_to_literal == None:
+        stack = []
+    else:
+        for state in reversed(stack):
+            if state.choice_tree[-1][0] == back_to_literal:
+                i = stack.index(state)
+                stack = stack[0:i + 1]
+
+    return stack

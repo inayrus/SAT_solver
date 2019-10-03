@@ -1,4 +1,11 @@
+"""
+Puzzle class for the SAT solver project.
+
+by Sanne van den Berg and Valerie Sawirja
+"""
 import pathlib
+import copy
+
 
 class Puzzle_State(object):
     """
@@ -7,21 +14,19 @@ class Puzzle_State(object):
 
     def __init__(self, inputfile):
         """
-        Initialized the attributes for the Puzzle
-        what does the puzzle state needs to know?
-            dictionary with all the literals and their values
-            a list with the active clauses
-            a list with the choices made so far --> this choice is what made the state as it is now
+        Initializes the attributes for the Puzzle. Contains:
+        a dictionary with all the absolute literals and their values,
+        a list with active clauses,
+        a list with variable splits [chosen_variable, truth_value, [dependents]]
         """
         self.values = {}
         self.clauses = self.load_clauses(inputfile)
         self.choice_tree = [[None, None, [None]]]
-        self.weights = dict.fromkeys(self.values, 0)
 
     def load_clauses(self, clauses_file):
         """
-        reads in the clauses from a file and fills self.values with literals
-        returns a list of lists
+        Reads in the clauses from a file and fills self.values with literals.
+        Returns a list of lists
         """
         # https://stackoverflow.com/questions/28890268/parse-dimacs-cnf-file-python
         filepath = pathlib.Path(clauses_file)
@@ -52,18 +57,15 @@ class Puzzle_State(object):
 
     def init_values(self, literal):
         """
-        checks if the literal is already in the self.values dict,
-        if it's not, it creates a new key-value pair (only absolute values)
-        ex. 'literal': '?'
+        Initializes all absolute literals in self.values dict with '?' as value.
         """
         if abs(literal) not in self.values:
             self.values[abs(literal)] = '?'
 
-
     def get_truth(self, literal):
         """
-        checks the truth value of a variable and takes negation into account
-        returns 1 if the literal is true, 0 if it's false, and '?' if unassigned
+        Checks truth value of a literal and accounts for negation.
+        Returns 1 if the literal is true, 0 if it's false, and '?' if unassigned.
         """
         # check if the literal is negated
         negated = self.is_negated(literal)
@@ -82,8 +84,7 @@ class Puzzle_State(object):
 
     def set_truth(self, literal, value):
         """
-        changes the value of a literal in self.values and takes negation of the
-        literal into account
+        Changes the value of a literal in self.values and accounts for negation.
         """
         # check if literal is negated
         negated = self.is_negated(literal)
@@ -94,15 +95,13 @@ class Puzzle_State(object):
             # if literal is negated assign the opposite values
             if value == 1:
                 self.values[abs(literal)] = 0
-            elif value == 0:
-                self.values[abs(literal)] = 1
             else:
-                print("something went wrong")
+                self.values[abs(literal)] = 1
 
     def is_negated(self, literal):
         """
-        checks if a literal is negated
-        returns a boolean
+        Checks if a literal is negated.
+        Returns a boolean.
         """
         if literal < 0:
             return True
@@ -111,8 +110,8 @@ class Puzzle_State(object):
 
     def update_clauses(self, literal):
         """
-        removes whole clauses that are now true
-        removes only literals that are now false
+        Removes clauses from self.clauses if they turned true.
+        Removes literals that turned false from their clauses.
         """
         value = self.get_truth(literal)
         conflict_lit = None
@@ -121,31 +120,46 @@ class Puzzle_State(object):
         for clause in [*self.clauses]:
             # only get clauses that have a version of the literal
             if literal in clause or -literal in clause:
-                # if the literal is true
                 if value == 1:
                     # clauses that are now true --> remove whole clause
                     if literal in clause:
                         self.clauses.remove(clause)
                     # negated literals become false --> remove from clause
                     else:
-                        # return the conflict literal
                         if len(clause) == 1:
+                            # conflict
                             conflict_lit = -literal
                         clause.remove(-literal)
-                        # return conflict_lit
 
                 # if the literal is false
                 else:
                     # false: remove literal from clause
                     if literal in clause:
-                        # return the conflict literal
                         if len(clause) == 1:
+                            # conflict
                             conflict_lit = literal
                         clause.remove(literal)
-                    # negated means whole clause is true
+                    # whole clause is true
                     else:
                         self.clauses.remove(clause)
+
         if conflict_lit:
-            print('conflict bitch', conflict_lit)
             conflict = True
+
         return conflict_lit, conflict
+
+    def get_unassigned(self):
+        """returns a list with unassigned variables"""
+        unassigned = [key for (key, value) in self.values.items() if value == '?']
+        return unassigned
+
+    def get_child(self, chosen_literal, truth):
+        child = copy.deepcopy(self)
+        # 1) add chosen var to choice tree
+        child.choice_tree.append([chosen_literal, truth, list()])
+        # 2) change value in dictionary
+        child.set_truth(chosen_literal, truth)
+        # 3) update clauses with new truth assignment
+        child.update_clauses(chosen_literal)
+
+        return child
