@@ -163,3 +163,15 @@ class Puzzle_State(object):
         child.update_clauses(chosen_literal)
 
         return child
+
+    def filter_literals(self, value):
+        """
+        takes self.values,
+        returns the variables that have the specified truth assignment in a list
+        """
+        literals = list()
+
+        for var in self.values:
+            if self.values[abs(var)] == value and var > 0:
+                literals.append(var)
+        return literals

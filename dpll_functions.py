@@ -104,9 +104,12 @@ def write_output(file, puzzle_obj):
     # check if inputfile has the .txt extension, if yes, remove it
     filename = get_extensionless(file)
 
-    # get a list with all literals that are True
-    true_literals = filter_true_literals(puzzle_obj)
-    n_true_lits = len(true_literals)
+    # sort the literals on their truth value
+    true_literals = puzzle_obj.filter_literals(1)
+    false_literals = puzzle_obj.filter_literals(0)
+    unassigned = puzzle_obj.get_unassigned()
+    n_true = len(true_literals)
+    n_lits = len(true_literals + false_literals + unassigned)
 
     # check if filename.out already exists
     file_path = pathlib.Path(filename + '.out')
@@ -116,36 +119,38 @@ def write_output(file, puzzle_obj):
         # comment
         writer.write("c A solution for {}:\n".format(filename))
 
-        # p cnf nvar nclauses
-        writer.write("p cnf {} {}\n".format(n_true_lits, n_true_lits))
+        # if solution is usat
+        if n_true == 0:
+            # p cnf nvar nclauses
+            writer.write("p cnf {} {}\n".format(n_true, n_true))
+            return
 
-        # write the literals
+        # p cnf nvar nclauses
+        writer.write("p cnf {} {}\n".format(n_lits, n_lits))
+
+        # write the true literals
         for var in true_literals:
             writer.write("{} 0\n".format(str(var)))
+
+        # write false literals with negative polarity
+        for literal in false_literals:
+            writer.write("{} 0\n".format(str(-literal)))
+
+        # write unassigned variables as false
+        for literal in unassigned:
+            writer.write("{} 0\n".format(str(-literal)))
+
     return
 
 
 def get_extensionless(filename):
     """returns the filename without extension"""
-    if ".txt" in filename:
+    if ".txt" in filename or ".cnf" in filename:
         filename = filename.split(".")[0]
     if "/" in filename:
         filename = filename.split("/")[-1]
 
     return filename
-
-
-def filter_true_literals(puzzle_obj):
-    """
-    takes self.values,
-    returns the variables that have truth assignment '1' in a list
-    """
-    true_literals = list()
-
-    for var in puzzle_obj.values:
-        if puzzle_obj.values[abs(var)] == 1 and var > 0:
-            true_literals.append(var)
-    return true_literals
 
 
 def print_heuristic(heuristic):
@@ -157,7 +162,7 @@ def print_heuristic(heuristic):
     elif heuristic == 2:
         print("Running DPLL with DLCS split heuristic.")
     else:
-        print("Running DPLL with VSIDS, clause learning, and non_chronological backtracking.")
+        print("Running DPLL with cVSIDS heuristic.")
 
 def output_statements(status, file):
     if status == "sat":

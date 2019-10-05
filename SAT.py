@@ -66,14 +66,14 @@ def iterative_dpll(input_file, heuristic):
         if len(current_state.clauses) == 0:
             print('Number of backtracks:', n_backtracks)
             output_statements("sat", file)
-            write_output(inputfile, current_state)
+            write_output(input_file, current_state)
             exit(0)
 
         # else, conflict. let the loop backtrack
 
     # broke out of while loop: UNSAT. write output with START puzzle state
     output_statements("unsat", file)
-    write_output(inputfile, start_state)
+    write_output(input_file, start_state)
     exit(0)
 
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     # add extension if absent
     inputfile = sys.argv[2]
-    if ".txt" not in inputfile:
+    if ".txt" not in inputfile and ".cnf" not in inputfile:
         inputfile = inputfile + ".txt"
 
     # ensure the file exist
